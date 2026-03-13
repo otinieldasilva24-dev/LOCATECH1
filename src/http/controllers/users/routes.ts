@@ -2,10 +2,8 @@ import { FastifyInstance } from "fastify";
 import { Register } from "./Register";
 import { Authenticate } from "./authenticate";
 import { Profile } from "./Perfil";
-import { refresh } from "./refresh";
-import { FetchUsers } from "./fetch-users";
+import { refresh } from "./refresh"
 import { verifyJWT } from "../middleware/verify-jwt";
-import { DeleteClients } from "./delete";
 import multer from 'multer'
 import path from 'path'
 import fs from 'fs'
@@ -35,8 +33,6 @@ export async function  UsersRoutes(app:FastifyInstance) {
 
 
     app.post('/sessions',Authenticate)
-    app.delete('/delete', DeleteClients)
     app.patch('/token/refresh',refresh)
     app.get('/me',{onRequest : [verifyJWT] } ,Profile)
-    app.get('/fetch-users',FetchUsers)  
 }
