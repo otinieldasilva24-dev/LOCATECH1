@@ -1,0 +1,91 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "debian-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  MEMBER
+  ADMIN
+}
+
+// Categoria do posto para facilitar a filtragem no GPS
+enum PostoType {
+  COMBUSTIVEL
+  GAS
+  MISTO
+}
+
+model User {
+  id            Int             @id @default(autoincrement())
+  nome          String
+  email         String          @unique
+  phone         String?
+  created_at    DateTime        @default(now())
+  role          Role            @default(MEMBER)
+  image_path    String?
+  isAlive       Boolean         @default(false)
+  notifications notifications[]
+
+  @@map("users")
+}
+
+model notifications {
+  id         Int      @id @default(autoincrement())
+  content    String
+  created_at DateTime @default(now())
+  users      User     @relation(fields: [userId], references: [id])
+  userId     Int
+}
+
+// --- NOVOS MODELOS PARA O LOCATECH ---
+
+model Posto {
+  id            Int       @id @default(autoincrement())
+  nome          String
+  tipo          PostoType @default(MISTO)
+  
+  // Localização vinda do módulo GPS
+  latitude      Float
+  longitude     Float
+  endereco      String?
+  
+  stocks        Stock[]   // Relacionamento com os produtos disponíveis
+  created_at    DateTime  @default(now())
+  updated_at    DateTime  @updatedAt
+
+  @@map("postos")
+}
+
+model Produto {
+  id             Int      @id @default(autoincrement())
+  nome           String   // Gasolina, Gasóleo, Botija 11kg, etc.
+  unidade_medida String   // "L" para litros, "UN" para unidades
+  stocks         Stock[]
+
+  @@map("produtos")
+}
+
+model Stock {
+  id                Int      @id @default(autoincrement())
+  quantidade_atual  Float    // Valor enviado pelo sensor IoT
+  capacidade_maxima Float    // Para calcular % (Baixo, Médio, Alto)
+  preco_unitario    Decimal  @db.Decimal(10, 2)
+  
+  // Relacionamentos
+  posto             Posto    @relation(fields: [postoId], references: [id])
+  postoId           Int
+  produto           Produto  @relation(fields: [produtoId], references: [id])
+  produtoId         Int
+
+  updated_at        DateTime @updatedAt
+
+  @@map("stocks")
+}
