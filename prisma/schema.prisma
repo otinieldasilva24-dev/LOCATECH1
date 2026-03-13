@@ -60,6 +60,7 @@ model Posto {
   stocks        Stock[]   // Relacionamento com os produtos disponíveis
   created_at    DateTime  @default(now())
   updated_at    DateTime  @updatedAt
+  @@unique([latitude, longitude])
 
   @@map("postos")
 }

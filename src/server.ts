@@ -8,6 +8,7 @@ import fastifyCookie from "@fastify/cookie";
 import multipart from '@fastify/multipart'
 import path from 'path'
 import fastifyStatic from '@fastify/static'
+import { PostosRoutes } from "./http/controllers/postos/routes";
 
 
 
@@ -65,6 +66,7 @@ export const io = new Server(server, {
 
 // Rotas
 app.register(UsersRoutes);
+app.register(PostosRoutes);
 
 
 // Socket Events
