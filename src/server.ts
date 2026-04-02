@@ -9,6 +9,9 @@ import multipart from '@fastify/multipart'
 import path from 'path'
 import fastifyStatic from '@fastify/static'
 import { PostosRoutes } from "./http/controllers/postos/routes";
+import { StocksRoutes } from "./http/controllers/stock/routes";
+import { prisma } from "./lib/prisma";
+import { Seed } from "./http/controllers/stock/seed";
 
 
 
@@ -38,13 +41,14 @@ app.register(fastifyStatic, {
   sign: { expiresIn: '10m' }
 });
 
-app.register(fastifyCookie);
 
+app.register(fastifyCookie);
+Seed()
 // CORS Aprimorado
 app.register(cors, {
   origin: [
     'https://quintal.onrender.com',
-    'http://localhost:5173'
+    'http://localhost:5174'
   ],
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
@@ -52,12 +56,16 @@ app.register(cors, {
   exposedHeaders: ['Authorization']
 });
 
-// Socket.IO
+app.addContentTypeParser(
+  "multipart/form-data",
+  (_request, _payload, done) => done(null)
+);
+ 
 export const io = new Server(server, {
   cors: {
     origin: [
-      'https://quintal.onrender.com',
-      'http://localhost:5173'
+      // 'https://quintal.onrender.com',
+      'http://localhost:5174'
     ],
     methods: ['GET', 'POST'],
     credentials: true
@@ -67,6 +75,7 @@ export const io = new Server(server, {
 // Rotas
 app.register(UsersRoutes);
 app.register(PostosRoutes);
+app.register(StocksRoutes)
 
 
 // Socket Events

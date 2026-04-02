@@ -1,51 +1,60 @@
+import { z } from "zod";
+import { FastifyRequest, FastifyReply } from "fastify";
+import { UserAreadyExistsError } from "@/repositories/errors/user-already-exists-error";
+import { makeRegisterUserCase } from "@/use-cases/factories/make-register-user";
 
-import {z} from'zod'
-import { FastifyRequest,FastifyReply } from "fastify";
-import { io } from '@/server';
-import { UserAreadyExistsError } from '@/repositories/errors/user-already-exists-error';
-import { makeRegisterUserCase } from '@/use-cases/factories/make-register-user';
+const RegisterBodySchema = z.object({
+  nome:     z.string(),
+  email:    z.string().email(),
+  password: z.string().min(6, "A palavra-passe deve ter pelo menos 6 caracteres."),
+  phone:    z.coerce.string().optional(),
+});
 
-export async function Register(request:FastifyRequest,reply:FastifyReply) {    
-    const RegisterBodySchema = z.object({
-       nome : z.string(),
-       email : z.string().email(),
-       phone:z.coerce.string().optional(),
-    })
-    console.log(request.body)
-   const {nome,email,phone} = RegisterBodySchema.parse(request.body)
-   try {
+export async function Register(request: FastifyRequest, reply: FastifyReply) {
+  // Sanitiza espaços nos nomes dos campos
+  const rawBody = request.body as Record<string, any>;
+  const cleanBody = Object.fromEntries(
+    Object.entries(rawBody).map(([k, v]) => [k.trim(), v])
+  );
 
-       const image = (request as any).file
-       const  image_path = image.filename
 
- 
-         if (!image) {
-    return reply.status(400).send({ message: 'Imagem não enviada' })
+  console.log(request.body)
+
+  const parsed = RegisterBodySchema.safeParse(cleanBody);
+
+  if (!parsed.success) {
+    return reply.status(400).send({
+      message: "Dados inválidos.",
+      errors: parsed.error.flatten().fieldErrors,
+    });
   }
 
-  
+  const { nome, email, password, phone } = parsed.data;
 
-      const registerUseCase = makeRegisterUserCase()
-      console.log(image_path)
+  // Imagem é opcional
+  const image      = (request as any).file;
+  const image_path = image?.filename;
 
-      const {user} = await registerUseCase.Execute({
-        image_path:image_path,
-        nome,
-        email,
-        phone
-     })
-   //   io.emit("users", user)
+  try {
+    const registerUseCase = makeRegisterUserCase();
 
-      return reply.status(201).send({user})
-   }
-    catch (error) { 
-      if( error instanceof UserAreadyExistsError){
-         return reply.status(409).send({message :error.message,})
-      }
-      throw error
-       
-   }
-   
+    const { user } = await registerUseCase.Execute({
+      nome,
+      email,
+      password,
+      phone,
+      image_path,
+    });
+
+    // Nunca devolve a password no response
+    const { password: _, ...userSemPassword } = user as any;
+
+    return reply.status(201).send({ user: userSemPassword });
+
+  } catch (error) {
+    if (error instanceof UserAreadyExistsError) {
+      return reply.status(409).send({ message: error.message });
+    }
+    throw error;
+  }
 }
-
-

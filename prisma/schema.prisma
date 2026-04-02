@@ -11,12 +11,13 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// Manter as enums existentes
 enum Role {
   MEMBER
   ADMIN
+  GESTOR // Adicionado para identificar o criador da conta
 }
 
-// Categoria do posto para facilitar a filtragem no GPS
 enum PostoType {
   COMBUSTIVEL
   GAS
@@ -24,69 +25,82 @@ enum PostoType {
 }
 
 model User {
-  id            Int             @id @default(autoincrement())
-  nome          String
-  email         String          @unique
-  phone         String?
-  created_at    DateTime        @default(now())
-  role          Role            @default(MEMBER)
-  image_path    String?
-  isAlive       Boolean         @default(false)
+  id         Int     @id @default(autoincrement())
+  nome       String // Capturado no Step 3
+  email      String  @unique // Capturado no Step 3
+  password   String // Necessário para o login
+  phone      String?
+  role       Role    @default(MEMBER)
+  image_path String?
+  isAlive    Boolean @default(false)
+
+  // Relacionamento: Um gestor pode gerir um ou mais postos
+  postos        Posto[]
   notifications notifications[]
+
+  created_at DateTime @default(now())
 
   @@map("users")
 }
 
-model notifications {
-  id         Int      @id @default(autoincrement())
-  content    String
-  created_at DateTime @default(now())
-  users      User     @relation(fields: [userId], references: [id])
-  userId     Int
-}
-
-// --- NOVOS MODELOS PARA O LOCATECH ---
-
 model Posto {
-  id            Int       @id @default(autoincrement())
-  nome          String
-  tipo          PostoType @default(MISTO)
-  
-  // Localização vinda do módulo GPS
-  latitude      Float
-  longitude     Float
-  endereco      String?
-  
-  stocks        Stock[]   // Relacionamento com os produtos disponíveis
-  created_at    DateTime  @default(now())
-  updated_at    DateTime  @updatedAt
-  @@unique([latitude, longitude])
+  id                  Int       @id @default(autoincrement())
+  nome                String // "Nome da Empresa" no Step 1
+  email_institucional String? // Capturado no Step 1
+  nif                 String    @unique // Capturado no Step 1
+  tipo                PostoType @default(MISTO)
+
+  // Localização
+  latitude  Float? // Pode ser nulo até o GPS ativar
+  longitude Float?
+  endereco  String? // "Localização" no Step 1 (String ou ID de província)
+
+  // Novos campos do Step 2
+  horario_funcionamento String?
+  alvara_path           String? // Caminho do arquivo do "Upload do Alvará"
+
+  // Relacionamentos
+  gestor   User @relation(fields: [gestorId], references: [id])
+  gestorId Int
+
+  stocks Stock[]
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
 
   @@map("postos")
 }
 
 model Produto {
-  id             Int      @id @default(autoincrement())
-  nome           String   // Gasolina, Gasóleo, Botija 11kg, etc.
-  unidade_medida String   // "L" para litros, "UN" para unidades
+  id             Int     @id @default(autoincrement())
+  nome           String // Ex: Gasolina, Gasóleo
+  unidade_medida String // L ou UN
   stocks         Stock[]
 
   @@map("produtos")
 }
 
 model Stock {
-  id                Int      @id @default(autoincrement())
-  quantidade_atual  Float    // Valor enviado pelo sensor IoT
-  capacidade_maxima Float    // Para calcular % (Baixo, Médio, Alto)
-  preco_unitario    Decimal  @db.Decimal(10, 2)
-  
-  // Relacionamentos
-  posto             Posto    @relation(fields: [postoId], references: [id])
-  postoId           Int
-  produto           Produto  @relation(fields: [produtoId], references: [id])
-  produtoId         Int
+  id                Int     @id @default(autoincrement())
+  quantidade_atual  Float   @default(0)
+  capacidade_maxima Float   @default(0)
+  preco_unitario    Float // "Preço Atual" no Step 2
 
-  updated_at        DateTime @updatedAt
+  posto     Posto   @relation(fields: [postoId], references: [id])
+  postoId   Int
+  produto   Produto @relation(fields: [produtoId], references: [id])
+  produtoId Int
+
+  updated_at DateTime @updatedAt
 
   @@map("stocks")
+}
+
+// Manter notificações como está
+model notifications {
+  id         Int      @id @default(autoincrement())
+  content    String
+  created_at DateTime @default(now())
+  users      User     @relation(fields: [userId], references: [id])
+  userId     Int
 }
