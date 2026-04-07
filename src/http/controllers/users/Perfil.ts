@@ -9,17 +9,12 @@ export async function Profile(request:FastifyRequest,reply:FastifyReply) {
     const {user} = await getUserProfile.execute({
       userId:Number(request.user.sub)
     })
-    
- 
-        
         return reply.status(200).send(
           user,
         )
      } catch (error:any) {
         console.log(error)
-      
      }
-
    }
 
 

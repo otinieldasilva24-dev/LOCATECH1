@@ -29,6 +29,7 @@ export async function Authenticate(request:FastifyRequest,reply:FastifyReply) {
            expiresIn:'1h'
       })
       
+      console.log(token)
    const refreshToken = await reply.jwtSign(
       {
          role : user.role 
