@@ -72,9 +72,17 @@ export const io = new Server(server, {
   }
 });
 
+app.post('/sensor', async (request, reply) => {
+  const { userId, content } = request.body;
+    // Lógica para salvar no banco (Prisma/PostgreSQL)
+    console.log("Recebido:", request.body);
+    
+})
+
 // Rotas
 app.register(UsersRoutes);
 app.register(PostosRoutes);
+
 app.register(StocksRoutes)
 
 

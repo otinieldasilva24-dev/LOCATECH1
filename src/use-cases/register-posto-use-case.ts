@@ -1,5 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { PostoType } from "@prisma/client";
+import { CreateNotificationUsecase } from "./create-notification";
+import { makeCreateNotification } from "./factories/make-createNotification";
 
 // ── Input type ────────────────────────────────────────────────────────────────
 
@@ -61,6 +63,10 @@ export class RegisterPostoUseCase {
         gestorId:              data.gestorId,
       },
     });
+   
+     
+
+
 
     return { posto };
   }

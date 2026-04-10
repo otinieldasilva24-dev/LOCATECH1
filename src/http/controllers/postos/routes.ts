@@ -3,6 +3,7 @@ import { RegisterPosto } from "./register-posto-controller";
 import { FetchNearbyPostosController } from "./filter-nearby-controller";
 import { upload } from "@/utills/multer";
 import { FetchAllPostosController } from "./fetch-all-postos-controller";
+import { NotificationsFetchController } from "./notifications-fetch-controller";
 
 export async function PostosRoutes(app:FastifyInstance) {
     app.post("/postos", async (request, reply) => {
@@ -27,4 +28,5 @@ export async function PostosRoutes(app:FastifyInstance) {
 // Rota para todos os postos
      app.get('/postos', fetchAllPostosController.handle);
      app.get('/proximos', fetchNearbyController.handle);
+     app.get('/notif', NotificationsFetchController);
 }
