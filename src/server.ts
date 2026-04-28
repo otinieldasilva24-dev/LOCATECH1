@@ -1,112 +1,90 @@
-import Fastify, { FastifyReply, FastifyRequest } from "fastify";
+import Fastify from "fastify";
 import { Server } from "socket.io";
-import { UsersRoutes } from "./http/controllers/users/routes";
-import { env } from "./Env";
-import cors  from'@fastify/cors'
+import cors from '@fastify/cors';
 import fastifyJwt from "@fastify/jwt";
 import fastifyCookie from "@fastify/cookie";
-import multipart from '@fastify/multipart'
-import path from 'path'
-import fastifyStatic from '@fastify/static'
+import multipart from '@fastify/multipart';
+import fastifyStatic from '@fastify/static';
+import path from 'path';
+
+import { env } from "./Env";
+import { UsersRoutes } from "./http/controllers/users/routes";
 import { PostosRoutes } from "./http/controllers/postos/routes";
 import { StocksRoutes } from "./http/controllers/stock/routes";
-import { prisma } from "./lib/prisma";
 import { Seed } from "./http/controllers/stock/seed";
-
-
-
 
 const app = Fastify();
 const server = app.server;
 
-// Configurações essenciais
-app.register(multipart);
-// app.register(fastifyStatic, {
-//   root: path.join(__dirname, "./http/controllers/uploads"),
-//   prefix: "/uploads/",
-// });local
+app.register(cors, {
+  origin: ['https://quintal.onrender.com', 'http://localhost:5000'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  credentials: true
+});
 
+app.register(multipart);
 app.register(fastifyStatic, {
-  root: path.join(__dirname,"uploads"),
+  root: path.join(__dirname, "uploads"),
   prefix: "/uploads/",
 });
 
-
-
-
-// Segurança e Autenticação
-  app.register(fastifyJwt, {
+app.register(fastifyJwt, {
   secret: env.JWT_SECRET,
   cookie: { cookieName: 'refreshToken', signed: false },
   sign: { expiresIn: '10m' }
 });
 
-
 app.register(fastifyCookie);
-Seed()
-// CORS Aprimorado
-app.register(cors, {
-  origin: [
-    'https://quintal.onrender.com',
-    'http://localhost:5000'
-  ],
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
-  credentials: true,
-  exposedHeaders: ['Authorization']
-});
+Seed();
 
-app.addContentTypeParser(
-  "multipart/form-data",
-  (_request, _payload, done) => done(null)
-);
- 
 export const io = new Server(server, {
   cors: {
-    origin: [
-      // 'https://quintal.onrender.com',
-      'http://localhost:5000'
-    ],
+    origin: ['http://localhost:5000', 'https://quintal.onrender.com'],
     methods: ['GET', 'POST'],
     credentials: true
   }
 });
 
-app.post('/sensor', async (request, reply) => {
-  const { userId, content } = request.body;
-    // Lógica para salvar no banco (Prisma/PostgreSQL)
-    console.log("Recebido:", request.body);
-    
-})
-
-// Rotas
-app.register(UsersRoutes);
-app.register(PostosRoutes);
-
-app.register(StocksRoutes)
-
-
-// Socket Events
 io.on("connection", (socket) => {
-  console.log("Cliente conectado:", socket.id);
-  socket.on("register", (userId) => {
-    socket.join(userId);
-  });
-  socket.on("disconnect", () => {
-    console.log("Cliente desconectado:", socket.id);
-  });
+  console.log("🔌 Cliente conectado:", socket.id);
+  socket.on("register", (userId) => socket.join(userId));
+  socket.on("disconnect", () => console.log("❌ Cliente desconectado."));
 });
 
-// Inicialização
+// --- ROTA DOS SENSORES COM VALIDAÇÃO ANTI-CRASH ---
+app.post('/sensor', async (request, reply) => {
+  const data = request.body as any;
+
+  // Validação para evitar envio de dados nulos ao frontend
+  if (!data || !data.id) {
+    return reply.status(400).send({ error: "Dados incompletos" });
+  }
+
+  // Garante que campos numéricos não sejam nulos para evitar erro de .toFixed no dashboard
+  const cleanData = {
+    ...data,
+    temp: data.temp ?? 0,
+    humi: data.humi ?? 0,
+    stock: data.stock ?? 0
+  };
+
+  console.log(`📡 [${cleanData.id}] Real-time Update: T:${cleanData.temp} S:${cleanData.stock}`);
+  
+  io.emit('monitoramento_update', cleanData);
+
+  return reply.status(200).send({ status: "ok" });
+});
+
+app.register(UsersRoutes);
+app.register(PostosRoutes);
+app.register(StocksRoutes);
+
 const start = async () => {
   try {
-    await app.listen({
-      port: env.PORT,
-      host: '0.0.0.0'
-    });
-    console.log("Servidor rodando 🐱‍🏍");
+    await app.listen({ port: env.PORT, host: '0.0.0.0' });
+    console.log("🚀 Servidor Unificado Online");
   } catch (err) {
-    console.error("Erro ao iniciar o servidor:", err);
+    console.error("🔴 Erro:", err);
     process.exit(1);
   }
 };
