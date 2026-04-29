@@ -39,6 +39,9 @@ model User {
   postos        Posto[]
   notifications notifications[]
 
+  // Relacionamento: Postos salvos (favoritos)
+  savedPosts   SavedPosto[]
+
   created_at DateTime @default(now())
 
   @@map("users")
@@ -61,10 +64,13 @@ model Posto {
   alvara_path           String? // Caminho do arquivo do "Upload do Alvará"
 
   // Relacionamentos
-  gestor   User @relation(fields: [gestorId], references: [id])
+  gestor   User     @relation(fields: [gestorId], references: [id])
   gestorId Int
 
   stocks Stock[]
+
+  // Relacionamento: Postos salvos (favoritos)
+  savedByUsers SavedPosto[]
 
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
@@ -104,4 +110,17 @@ model notifications {
   created_at DateTime @default(now())
   users      User     @relation(fields: [userId], references: [id])
   userId     Int
+}
+
+// Modelo para Postos Salvos (Favoritos)
+model SavedPosto {
+  id        Int     @id @default(autoincrement())
+  user      User    @relation(fields: [userId], references: [id])
+  userId    Int
+  posto     Posto   @relation(fields: [postoId], references: [id])
+  postoId   Int
+  created_at DateTime @default(now())
+
+  @@unique([userId, postoId]) // Um usuário não pode salvar o mesmo posto duas vezes
+  @@map("saved_postos")
 }

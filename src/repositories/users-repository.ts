@@ -14,4 +14,5 @@ export interface usersRepository {
     findByEmail( email : string) : Promise <User | null>  //devolvendo uma promise
     Create(data : Prisma.UserCreateInput) : Promise<User>
     fetchUsers():Promise<User[]>
+    updateAvatar(userId: number, image_path: string): Promise<User>
 }

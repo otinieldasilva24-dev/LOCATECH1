@@ -2,6 +2,7 @@ import { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { FastifyRequest, FastifyReply } from "fastify";
 import { prisma } from "@/lib/prisma";
+import { UpdateStockController } from "./update-stock-controller";
 
 
 const CreateStockSchema = z.object({
@@ -32,4 +33,5 @@ export async function CreateStock(request: FastifyRequest, reply: FastifyReply) 
 
 export async function StocksRoutes(app: FastifyInstance) {
   app.post("/stocks", CreateStock);
+  app.patch('/stocks/:id', UpdateStockController);
 }

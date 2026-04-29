@@ -2,9 +2,12 @@ import multer from 'multer'
 import path from 'path'
 import fs from 'fs'
 
-console.log("__dirname →", __dirname);
+// Usar caminho absoluto baseado no diretório do projeto
+const projectRoot = path.resolve(__dirname, '../../');
+const uploadDir = path.join(projectRoot, 'uploads');
 
-const uploadDir = path.join(__dirname, '../http/controllers/uploads');
+console.log("Upload dir →", uploadDir);
+
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true })
 }

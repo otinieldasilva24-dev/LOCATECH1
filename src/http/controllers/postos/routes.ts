@@ -1,12 +1,18 @@
 import { FastifyInstance } from "fastify";
 import { RegisterPosto } from "./register-posto-controller";
+import { UpdatePostoController } from "./update-posto-controller";
+import { FetchPostoByIdController } from "./fetch-posto-by-id-controller";
 import { FetchNearbyPostosController } from "./filter-nearby-controller";
 import { upload } from "@/utills/multer";
 import { FetchAllPostosController } from "./fetch-all-postos-controller";
 import { NotificationsFetchController } from "./notifications-fetch-controller";
+import { verifyJWT, verifyUserRole } from "../middleware/verify-jwt";
 
 export async function PostosRoutes(app:FastifyInstance) {
-    app.post("/postos", async (request, reply) => {
+    // Apenas GESTOR e ADMIN podem cadastrar novos postos
+    app.post("/postos", { 
+        preHandler: [verifyJWT, verifyUserRole(['GESTOR', 'ADMIN'])] 
+    }, async (request, reply) => {
     await new Promise<void>((resolve, reject) => {
       const middleware = upload.single("alvara");
       middleware(request.raw as any, reply.raw as any, (err) => {
@@ -27,6 +33,12 @@ export async function PostosRoutes(app:FastifyInstance) {
 
 // Rota para todos os postos
      app.get('/postos', fetchAllPostosController.handle);
+     app.get('/postos/:id', FetchPostoByIdController);
      app.get('/proximos', fetchNearbyController.handle);
      app.get('/notif', NotificationsFetchController);
+     
+     // Atualizar posto (apenas GESTOR ou ADMIN)
+     app.patch('/postos/:id', { 
+         preHandler: [verifyJWT, verifyUserRole(['GESTOR', 'ADMIN'])] 
+     }, UpdatePostoController);
 }

@@ -11,21 +11,29 @@ import { env } from "./Env";
 import { UsersRoutes } from "./http/controllers/users/routes";
 import { PostosRoutes } from "./http/controllers/postos/routes";
 import { StocksRoutes } from "./http/controllers/stock/routes";
+import { SavedPostosRoutes } from "./http/controllers/saved-postos/routes";
 import { Seed } from "./http/controllers/stock/seed";
 
 const app = Fastify();
 const server = app.server;
 
 app.register(cors, {
-  origin: ['https://quintal.onrender.com', 'http://localhost:5000'],
+  origin: ['https://quintal.onrender.com', 'http://localhost:5000', 'http://localhost:3000'],
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   credentials: true
 });
 
 app.register(multipart);
+
+// Servir uploads com caminho absoluto
+const projectRoot = path.resolve(__dirname, '../../');
+const uploadPath = path.join(projectRoot, 'uploads');
+console.log("Servindo uploads de:", uploadPath);
+
 app.register(fastifyStatic, {
-  root: path.join(__dirname, "uploads"),
+  root: uploadPath,
   prefix: "/uploads/",
+  decorateReply: false,
 });
 
 app.register(fastifyJwt, {
@@ -39,9 +47,10 @@ Seed();
 
 export const io = new Server(server, {
   cors: {
-    origin: ['http://localhost:5000', 'https://quintal.onrender.com'],
-    methods: ['GET', 'POST'],
-    credentials: true
+    origin: ['http://localhost:3000', 'http://localhost:5000', 'https://quintal.onrender.com'],
+    methods: ['GET', 'POST', 'OPTIONS'],
+    credentials: true,
+    allowedHeaders: ['Authorization', 'Content-Type']
   }
 });
 
@@ -78,6 +87,7 @@ app.post('/sensor', async (request, reply) => {
 app.register(UsersRoutes);
 app.register(PostosRoutes);
 app.register(StocksRoutes);
+app.register(SavedPostosRoutes);
 
 const start = async () => {
   try {

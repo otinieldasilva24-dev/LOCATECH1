@@ -1,16 +1,17 @@
 // import { hash } from "bcryptjs";
 import { UserAreadyExistsError } from "@/repositories/errors/user-already-exists-error";
 import { usersRepository } from "@/repositories/users-repository";
-import { User } from "@prisma/client";
+import { User, Role } from "@prisma/client";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 interface RegisterUseCaseRequest {
   nome:       string;
   email:      string;
-  password:   string;
+  password?:  string;
   phone?:     string;
   image_path?: string;
+  role?:       Role;
 }
 
 interface RegisterUseCaseResponse {
@@ -28,6 +29,7 @@ export class RegisterUseCase {
     password,
     phone,
     image_path,
+    role,
   }: RegisterUseCaseRequest): Promise<RegisterUseCaseResponse> {
 
     // 1. Verifica e-mail duplicado
@@ -37,8 +39,9 @@ export class RegisterUseCase {
       throw new UserAreadyExistsError();
     }
 
-    // 2. Hash da palavra-passe
-    const password_hash = password
+    // 2. Hash da palavra-passe (gerar automática se não fornecida)
+    const finalPassword = password ?? Math.random().toString(36).slice(-8) + "123!"; // Senha aleatória se não fornecida
+    const password_hash = finalPassword // Em produção, usar bcryptjs.hash(finalPassword, 10)
 
     // 3. Cria o utilizador
     const user = await this.usersRepository.Create({
@@ -47,6 +50,7 @@ export class RegisterUseCase {
       password: password_hash,
       phone,
       image_path,
+      role,
     });
 
     return { user };

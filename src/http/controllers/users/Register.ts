@@ -6,8 +6,9 @@ import { makeRegisterUserCase } from "@/use-cases/factories/make-register-user";
 const RegisterBodySchema = z.object({
   nome:     z.string(),
   email:    z.string().email(),
-  password: z.string().min(6, "A palavra-passe deve ter pelo menos 6 caracteres."),
+  password: z.string().min(6, "A palavra-passe deve ter pelo menos 6 caracteres.").optional(),
   phone:    z.coerce.string().optional(),
+  role:     z.enum(["MEMBER", "ADMIN", "GESTOR"]).optional(),
 });
 
 export async function Register(request: FastifyRequest, reply: FastifyReply) {
@@ -29,7 +30,7 @@ export async function Register(request: FastifyRequest, reply: FastifyReply) {
     });
   }
 
-  const { nome, email, password, phone } = parsed.data;
+  const { nome, email, password, phone, role } = parsed.data;
 
   // Imagem é opcional
   const image      = (request as any).file;
@@ -44,6 +45,7 @@ export async function Register(request: FastifyRequest, reply: FastifyReply) {
       password,
       phone,
       image_path,
+      role,
     });
 
     // Nunca devolve a password no response
