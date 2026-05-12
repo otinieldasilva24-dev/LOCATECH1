@@ -5,7 +5,7 @@ const prisma = new PrismaClient({
   log: ['error', 'warn'],
 });
 
-async function main() {
+export async function main() {
   console.log('🌱 A iniciar seed...');
 
   try {
@@ -37,7 +37,6 @@ async function main() {
         email: 'gestor@locatech.com',
         password: hashedPassword,
         phone: '+244912345678',
-        Age:19,
         role: 'GESTOR',
       },
     });
@@ -89,7 +88,6 @@ async function main() {
         email: 'cliente@email.com',
         password: clientePassword,
         phone: '+244923456789',
-        Age:17,
         role: 'MEMBER',
       },
     });

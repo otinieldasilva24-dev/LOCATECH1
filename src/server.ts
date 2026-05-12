@@ -13,6 +13,7 @@ import { PostosRoutes } from "./http/controllers/postos/routes";
 import { StocksRoutes } from "./http/controllers/stock/routes";
 import { SavedPostosRoutes } from "./http/controllers/saved-postos/routes";
 import { Seed } from "./http/controllers/stock/seed";
+import { main } from "prisma/seed";
 
 const app = Fastify();
 const server = app.server;
@@ -43,7 +44,8 @@ app.register(fastifyJwt, {
 });
 
 app.register(fastifyCookie);
-Seed();
+main()
+
 
 export const io = new Server(server, {
   cors: {
