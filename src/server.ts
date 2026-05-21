@@ -80,7 +80,7 @@ app.post('/sensor', async (request, reply) => {
   };
 
   console.log(`📡 [${cleanData.id}] Real-time Update: T:${cleanData.temp} S:${cleanData.stock}`);
-  
+
   io.emit('monitoramento_update', cleanData);
 
   return reply.status(200).send({ status: "ok" });

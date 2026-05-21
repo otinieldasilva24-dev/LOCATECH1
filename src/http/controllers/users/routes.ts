@@ -2,6 +2,7 @@ import { FastifyInstance } from "fastify";
 import { Register } from "./Register";
 import { Authenticate } from "./authenticate";
 import { Profile } from "./Perfil";
+import { UpdateProfile } from "./update-profile";
 import { refresh } from "./refresh"
 import { verifyJWT } from "../middleware/verify-jwt";
 import multer from 'multer'
@@ -31,6 +32,7 @@ export async function  UsersRoutes(app:FastifyInstance) {
     app.post('/sessions',Authenticate)
     app.patch('/token/refresh',refresh)
     app.get('/me',{onRequest : [verifyJWT] } ,Profile)
+    app.put('/me',{onRequest : [verifyJWT] },UpdateProfile)
 
     // Upload de avatar
     avatarRoutes(app)

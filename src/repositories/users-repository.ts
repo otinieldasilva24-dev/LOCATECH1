@@ -15,4 +15,5 @@ export interface usersRepository {
     Create(data : Prisma.UserCreateInput) : Promise<User>
     fetchUsers():Promise<User[]>
     updateAvatar(userId: number, image_path: string): Promise<User>
+    updateUser(id: number, data: Prisma.UserUpdateInput): Promise<User>
 }
