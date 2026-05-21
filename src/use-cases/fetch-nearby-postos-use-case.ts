@@ -1,38 +1,32 @@
-  // src/use-cases/fetch-nearby-postos-use-case.ts
-  import { PrismaClient } from '@prisma/client';
+import { PrismaClient } from '@prisma/client';
 
-  const prisma = new PrismaClient();
+const prisma = new PrismaClient();
 
-  interface FetchNearbyRequest {
-    userLatitude: number;
-    userLongitude: number;
-  }
+interface FetchNearbyRequest {
+  userLatitude: number;
+  userLongitude: number;
+  radius?: number;
+  limit?: number;
+}
 
-
-  interface PostoWithPrices {
-    id: number;
+interface PostoWithPrices {
+  id: number;
+  nome: string;
+  tipo: string;
+  latitude: number;
+  longitude: number;
+  endereco: string | null;
+  distance: number;
+  produtos: {
     nome: string;
-    tipo: string;
-    latitude: number;
-    longitude: number;
-    endereco: string | null;
-    distance: number;
-    // Aqui virão os produtos agregados como JSON
-    produtos: {
-      nome: string;
-      preco: number;
-      unidade: string;
-      quantidade: number;
-    }[];
-  }
-
-
+    preco: number;
+    unidade: string;
+    quantidade: number;
+  }[];
+}
 
 export class FetchNearbyPostosUseCase {
-  async execute({ userLatitude, userLongitude }: FetchNearbyRequest) {
-    // Definimos um raio máximo em KM (ex: 10km)
-    const distanceInKm = 10; 
-
+  async execute({ userLatitude, userLongitude, radius = 10, limit = 75 }: FetchNearbyRequest) {
     const postos = await prisma.$queryRaw<PostoWithPrices[]>`
       SELECT * FROM (
         SELECT 
@@ -59,9 +53,9 @@ export class FetchNearbyPostosUseCase {
           ) AS produtos
         FROM postos p
       ) AS results
-      WHERE distance <= ${distanceInKm}
+      WHERE distance <= ${radius}
       ORDER BY distance ASC
-      LIMIT 75
+      LIMIT ${limit}
     `;
 
     return { postos };

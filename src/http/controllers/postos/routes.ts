@@ -2,7 +2,7 @@ import { FastifyInstance } from "fastify";
 import { RegisterPosto } from "./register-posto-controller";
 import { UpdatePostoController } from "./update-posto-controller";
 import { FetchPostoByIdController } from "./fetch-posto-by-id-controller";
-import { FetchNearbyPostosController } from "./filter-nearby-controller";
+import { FetchNearbyPostosController, FetchNearbyPostosControllerV2 } from "./filter-nearby-controller";
 import { upload } from "@/utills/multer";
 import { FetchAllPostosController } from "./fetch-all-postos-controller";
 import { NotificationsFetchController } from "./notifications-fetch-controller";
@@ -28,12 +28,14 @@ export async function PostosRoutes(app:FastifyInstance) {
   });
 
      const fetchNearbyController = new FetchNearbyPostosController();
+     const fetchNearbyControllerV2 = new FetchNearbyPostosControllerV2();
      const fetchAllPostosController = new FetchAllPostosController();
 
 
 // Rota para todos os postos
      app.get('/postos', fetchAllPostosController.handle);
      app.get('/postos/:id', FetchPostoByIdController);
+     app.get('/postos/nearby', fetchNearbyControllerV2.handle);
      app.get('/proximos', fetchNearbyController.handle);
      app.get('/notif', NotificationsFetchController);
      
