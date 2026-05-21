@@ -23,12 +23,18 @@ export async function avatarRoutes(app: FastifyInstance) {
           return reply.status(400).send({ message: "Nenhuma imagem enviada." });
         }
 
-        const buffer = await data.toBuffer();
         const ext = path.extname(data.filename) || ".jpg";
         const uniqueName = `${randomUUID()}${ext}`;
         const filePath = path.join(uploadDir, uniqueName);
 
-        fs.writeFileSync(filePath, buffer);
+        const writeStream = fs.createWriteStream(filePath);
+
+        await new Promise<void>((resolve, reject) => {
+          data.file.on("error", reject);
+          writeStream.on("error", reject);
+          writeStream.on("finish", resolve);
+          data.file.pipe(writeStream);
+        });
 
         const userId = Number(request.user.sub);
         const user = await prisma.user.update({
