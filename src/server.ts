@@ -12,6 +12,7 @@ import { UsersRoutes } from "./http/controllers/users/routes";
 import { PostosRoutes } from "./http/controllers/postos/routes";
 import { StocksRoutes } from "./http/controllers/stock/routes";
 import { SavedPostosRoutes } from "./http/controllers/saved-postos/routes";
+import { ProdutosRoutes } from "./http/controllers/produtos/routes";
 import { Seed } from "./http/controllers/stock/seed";
 import { main } from "prisma/seed";
 
@@ -90,6 +91,7 @@ app.register(UsersRoutes);
 app.register(PostosRoutes);
 app.register(StocksRoutes);
 app.register(SavedPostosRoutes);
+app.register(ProdutosRoutes);
 
 const start = async () => {
   try {
