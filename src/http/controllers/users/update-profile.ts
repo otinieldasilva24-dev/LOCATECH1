@@ -42,7 +42,7 @@ export async function UpdateProfile(request: FastifyRequest, reply: FastifyReply
       }
 
       if (user.password !== oldPassword) {
-        return reply.status(401).send({ message: "A palavra-passe antiga não coincide." });
+        return reply.status(400).send({ message: "A palavra-passe antiga não coincide." });
       }
 
       dataToUpdate.password = newPassword;
