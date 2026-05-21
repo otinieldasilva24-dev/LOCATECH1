@@ -25,6 +25,7 @@ export class FetchAllPostosUseCase {
       latitude: posto.latitude,
       longitude: posto.longitude,
       endereco: posto.endereco,
+      horario_funcionamento: posto.horario_funcionamento,
       produtos: posto.stocks.map((s) => ({
         nome: s.produto.nome,
         preco: s.preco_unitario,
