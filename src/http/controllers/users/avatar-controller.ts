@@ -1,44 +1,48 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
 import { verifyJWT } from "../middleware/verify-jwt";
-import { makeUpdateAvatarUseCase } from "@/use-cases/factories/make-update-avatar";
-import { upload } from "@/utills/multer";
+import { prisma } from "@/lib/prisma";
+import path from "path";
+import fs from "fs";
+import { randomUUID } from "crypto";
+
+const uploadDir = path.resolve(__dirname, "../../../../uploads");
+
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true });
+}
 
 export async function avatarRoutes(app: FastifyInstance) {
   app.patch(
     "/me/avatar",
-    { preHandler: [verifyJWT] },
+    { onRequest: [verifyJWT] },
     async (request: FastifyRequest, reply: FastifyReply) => {
-      // 1. Processa o upload via multer
-      await new Promise<void>((resolve, reject) => {
-        upload.single("image")(request.raw as any, reply.raw as any, (err) => {
-          if (err) return reject(err);
-          resolve();
-        });
-      });
-
-      // 2. Valida presença do arquivo
-      const file = (request as any).file;
-      if (!file) {
-        return reply.status(400).send({ message: "Nenhuma imagem enviada." });
-      }
-
-      const userId = Number(request.user.sub);
-
-      // 3. Executa o caso de uso (única responsável pela atualização)
       try {
-        const useCase = makeUpdateAvatarUseCase();
-        const { image_path } = await useCase.execute({
-          userId,
-          image_path: file.filename,
+        const data = await request.file();
+
+        if (!data) {
+          return reply.status(400).send({ message: "Nenhuma imagem enviada." });
+        }
+
+        const buffer = await data.toBuffer();
+        const ext = path.extname(data.filename) || ".jpg";
+        const uniqueName = `${randomUUID()}${ext}`;
+        const filePath = path.join(uploadDir, uniqueName);
+
+        fs.writeFileSync(filePath, buffer);
+
+        const userId = Number(request.user.sub);
+        const user = await prisma.user.update({
+          where: { id: userId },
+          data: { image_path: uniqueName },
         });
 
         return reply.status(200).send({
           success: true,
-          image_path,
+          image_path: user.image_path,
           message: "Avatar atualizado com sucesso!",
         });
       } catch (error: any) {
-        console.error("[Avatar] Erro ao atualizar avatar:", error);
+        console.error("[Avatar] Erro:", error);
         return reply.status(500).send({
           success: false,
           message: "Erro ao atualizar avatar.",
