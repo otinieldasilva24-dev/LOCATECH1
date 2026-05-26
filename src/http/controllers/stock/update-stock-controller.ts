@@ -32,8 +32,12 @@ export async function UpdateStockController(
     // Busca stock atual para comparar preço
     const stockAtual = await prisma.stock.findUnique({
       where: { id: stockId },
-      include: { posto: { select: { nome: true, gestorId: true } } },
+      include: { posto: { select: { nome: true, gestorId: true } }, produto: true },
     });
+
+    if (!stockAtual) {
+      return reply.status(404).send({ message: "Stock não encontrado." });
+    }
 
     const stock = await prisma.stock.update({
       where: { id: stockId },
@@ -42,32 +46,34 @@ export async function UpdateStockController(
     });
 
     // Gera notificação se o preço foi alterado
-    if (parsed.data.preco_unitario !== undefined && stockAtual) {
+    if (parsed.data.preco_unitario !== undefined) {
       const precoAntigo = stockAtual.preco_unitario;
       const precoNovo = parsed.data.preco_unitario;
-      
-      const notificationContent = `O preço do ${stock.produto.nome} no posto ${stock.posto.nome} foi alterado de ${precoAntigo} Kz para ${precoNovo} Kz.`;
-      
-      // Cria notificação para o gestor do posto
-      await prisma.notifications.create({
-        data: {
-          userId: stock.posto.gestorId,
-          content: notificationContent,
-        },
-      });
 
-      // Emite evento via Socket.IO para atualização em tempo real
-      const io = (request.server as any).io;
-      if (io) {
-        io.to(stock.posto.gestorId.toString()).emit('nova_notificacao', {
-          content: notificationContent,
-          created_at: new Date(),
+      if (precoAntigo !== precoNovo) {
+        const notificationContent = `O preço do ${stockAtual.produto.nome} no posto ${stockAtual.posto.nome} foi alterado de ${precoAntigo} Kz para ${precoNovo} Kz.`;
+
+        await prisma.notifications.create({
+          data: {
+            userId: stockAtual.posto.gestorId,
+            content: notificationContent,
+          },
         });
+
+        // Emite evento via Socket.IO para atualização em tempo real
+        const io = (request.server as any).io;
+        if (io) {
+          io.to(stockAtual.posto.gestorId.toString()).emit('nova_notificacao', {
+            content: notificationContent,
+            created_at: new Date(),
+          });
+        }
       }
     }
 
     return reply.status(200).send({ stock });
   } catch (error) {
+    console.error("Erro ao atualizar stock:", error);
     return reply.status(404).send({ message: "Stock não encontrado." });
   }
 }
