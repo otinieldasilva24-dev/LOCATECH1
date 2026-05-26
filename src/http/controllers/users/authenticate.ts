@@ -22,23 +22,25 @@ export async function Authenticate(request:FastifyRequest,reply:FastifyReply) {
    //  });
      const token = await reply.jwtSign(
       {
-         role : user.role
+         role : user.role,
+         id   : user.id
       },
       {
-           sub: String(user.id),   
+           subject: String(user.id),   
            expiresIn:'1h'
       })
       
       console.log(token)
    const refreshToken = await reply.jwtSign(
       {
-         role : user.role 
+         role : user.role,
+         id   : user.id
 
       },
 
       {
-       
-            sub:String(user.id),
+        
+            subject:String(user.id),
             expiresIn:'7d',
          
       }

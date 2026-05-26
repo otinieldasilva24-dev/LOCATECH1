@@ -2,6 +2,7 @@ import { z } from "zod";
 import { FastifyRequest, FastifyReply } from "fastify";
 import { prisma } from "@/lib/prisma";
 import { makeCreateNotification } from "@/use-cases/factories/make-createNotification";
+import { getIO } from "@/lib/socket-provider";
 
 const RegisterPostoSchema = z.object({
   nome:                   z.string(),
@@ -49,17 +50,47 @@ export async function RegisterPosto(request: FastifyRequest, reply: FastifyReply
     },
   });
 
-   const notificationContent = `O posto ${posto.nome} foi registado com sucesso.`;
-    
-     const usecase = makeCreateNotification()
+  const notificationContent = `O posto ${posto.nome} foi registado com sucesso.`;
 
-     const notification = await usecase.execute({
-        userId: posto.gestorId,
-        content: notificationContent
-     })
+  try {
+    // Notifica o gestor
+    const usecase = makeCreateNotification();
+    await usecase.execute({
+      userId: posto.gestorId,
+      content: notificationContent,
+    });
 
+    // Notifica todos os utilizadores MEMBER sobre o novo posto
+    const membros = await prisma.user.findMany({
+      where: { role: "MEMBER" },
+    });
 
-     console.log("NOTIFICATION:", notification)
+    for (const m of membros) {
+      await usecase.execute({
+        userId: m.id,
+        content: `Novo posto disponível: ${posto.nome} foi registado na plataforma.`,
+      });
+    }
+
+    // Emite evento Socket.IO
+    const io = getIO();
+    if (!io) {
+      console.error("⚠️ Socket.IO não disponível — notificação não emitida.");
+    } else {
+      io.to(posto.gestorId.toString()).emit("nova_notificacao", {
+        content: notificationContent,
+        created_at: new Date(),
+      });
+      for (const m of membros) {
+        io.to(m.id.toString()).emit("nova_notificacao", {
+          content: `Novo posto disponível: ${posto.nome} foi registado na plataforma.`,
+          created_at: new Date(),
+        });
+      }
+    }
+  } catch (error) {
+    console.error("⚠️ Erro ao gerar notificações:", error);
+  }
 
   return reply.status(201).send({ posto });
 }

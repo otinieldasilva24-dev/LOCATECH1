@@ -13,8 +13,10 @@ import { PostosRoutes } from "./http/controllers/postos/routes";
 import { StocksRoutes } from "./http/controllers/stock/routes";
 import { SavedPostosRoutes } from "./http/controllers/saved-postos/routes";
 import { ProdutosRoutes } from "./http/controllers/produtos/routes";
+import { ComunidadeRoutes } from "./http/controllers/comunidade/routes";
 import { Seed } from "./http/controllers/stock/seed";
 import { main } from "prisma/seed";
+import { setIO } from "@/lib/socket-provider";
 
 const app = Fastify();
 const server = app.server;
@@ -63,6 +65,9 @@ io.on("connection", (socket) => {
   socket.on("disconnect", () => console.log("❌ Cliente desconectado."));
 });
 
+// Disponibiliza o Socket.IO globalmente para os controladores
+setIO(io);
+
 // --- ROTA DOS SENSORES COM VALIDAÇÃO ANTI-CRASH ---
 app.post('/sensor', async (request, reply) => {
   const data = request.body as any;
@@ -92,6 +97,7 @@ app.register(PostosRoutes);
 app.register(StocksRoutes);
 app.register(SavedPostosRoutes);
 app.register(ProdutosRoutes);
+app.register(ComunidadeRoutes);
 
 const start = async () => {
   try {

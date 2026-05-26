@@ -42,6 +42,12 @@ model User {
   // Relacionamento: Postos salvos (favoritos)
   savedPosts   SavedPosto[]
 
+  // Relacionamento: Comunidades
+  membros           ComunidadeMembro[]
+  comunidadesCriadas Comunidade[] @relation("ComunidadeCriador")
+  convitesEnviados  Convite[]  @relation("ConvitesEnviados")
+  convitesRecebidos Convite[]  @relation("ConvitesRecebidos")
+
   created_at DateTime @default(now())
 
   @@map("users")
@@ -110,6 +116,48 @@ model notifications {
   created_at DateTime @default(now())
   users      User     @relation(fields: [userId], references: [id])
   userId     Int
+}
+
+model Comunidade {
+  id          Int      @id @default(autoincrement())
+  nome        String
+  descricao   String?
+  created_by  Int
+  created_at  DateTime @default(now())
+
+  criador User   @relation("ComunidadeCriador", fields: [created_by], references: [id])
+  membros ComunidadeMembro[]
+  convites Convite[]
+
+  @@map("comunidades")
+}
+
+model ComunidadeMembro {
+  id            Int      @id @default(autoincrement())
+  user_id       Int
+  comunidade_id Int
+  joined_at     DateTime @default(now())
+
+  user       User       @relation(fields: [user_id], references: [id])
+  comunidade Comunidade @relation(fields: [comunidade_id], references: [id])
+
+  @@unique([user_id, comunidade_id])
+  @@map("comunidade_membros")
+}
+
+model Convite {
+  id            Int      @id @default(autoincrement())
+  de_user_id    Int
+  para_user_id  Int
+  comunidade_id Int
+  status        String   @default("PENDENTE")
+  created_at    DateTime @default(now())
+
+  de_user    User       @relation("ConvitesEnviados", fields: [de_user_id], references: [id])
+  para_user  User       @relation("ConvitesRecebidos", fields: [para_user_id], references: [id])
+  comunidade Comunidade @relation(fields: [comunidade_id], references: [id])
+
+  @@map("convites")
 }
 
 // Modelo para Postos Salvos (Favoritos)

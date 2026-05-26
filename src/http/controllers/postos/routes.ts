@@ -38,7 +38,7 @@ export async function PostosRoutes(app:FastifyInstance) {
      app.get('/postos/:id', FetchPostoByIdController);
      app.get('/postos/nearby', fetchNearbyControllerV2.handle);
      app.get('/proximos', fetchNearbyController.handle);
-     app.get('/notif', NotificationsFetchController);
+      app.get('/notif', { preHandler: [verifyJWT] }, NotificationsFetchController);
 
      // Lista apenas os postos do gestor logado
      app.get('/postos/meus', {

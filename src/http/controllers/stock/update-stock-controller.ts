@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { FastifyRequest, FastifyReply } from "fastify";
 import { prisma } from "@/lib/prisma";
+import { getIO } from "@/lib/socket-provider";
 
 const UpdateStockSchema = z.object({
   preco_unitario: z.coerce.number().positive().optional(),
@@ -53,6 +54,7 @@ export async function UpdateStockController(
       if (precoAntigo !== precoNovo) {
         const notificationContent = `O preço do ${stockAtual.produto.nome} no posto ${stockAtual.posto.nome} foi alterado de ${precoAntigo} Kz para ${precoNovo} Kz.`;
 
+        // Notifica o gestor do posto
         await prisma.notifications.create({
           data: {
             userId: stockAtual.posto.gestorId,
@@ -60,13 +62,32 @@ export async function UpdateStockController(
           },
         });
 
-        // Emite evento via Socket.IO para atualização em tempo real
-        const io = (request.server as any).io;
+        // Notifica todos os MEMBER sobre a alteração de preço
+        const membros = await prisma.user.findMany({
+          where: { role: "MEMBER" },
+        });
+
+        for (const m of membros) {
+          await prisma.notifications.create({
+            data: { userId: m.id, content: notificationContent },
+          });
+        }
+
+        // Emite evento via Socket.IO para todos
+        const io = getIO();
         if (io) {
           io.to(stockAtual.posto.gestorId.toString()).emit('nova_notificacao', {
             content: notificationContent,
             created_at: new Date(),
           });
+          for (const m of membros) {
+            io.to(m.id.toString()).emit('nova_notificacao', {
+              content: notificationContent,
+              created_at: new Date(),
+            });
+          }
+        } else {
+          console.error("⚠️ Socket.IO não disponível — notificação de stock não emitida.");
         }
       }
     }
