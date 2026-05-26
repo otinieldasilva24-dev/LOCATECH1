@@ -25,6 +25,11 @@ export async function main() {
       update: {},
       create: { id: 3, nome: 'Gás', unidade_medida: 'L' },
     });
+    await prisma.produto.upsert({
+      where: { id: 4 },
+      update: {},
+      create: { id: 4, nome: 'Gás Butano', unidade_medida: 'L' },
+    });
     console.log('✅ Produtos criados');
 
     // Criar Gestor
