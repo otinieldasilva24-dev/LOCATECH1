@@ -21,28 +21,16 @@ export async function Authenticate(request:FastifyRequest,reply:FastifyReply) {
    //    secret: 'supersecret', // Substitua por uma chave secreta segura
    //  });
      const token = await reply.jwtSign(
+      { role: user.role },
       {
-         role : user.role,
-         id   : user.id
-      },
-      {
-           subject: String(user.id),   
-           expiresIn:'1h'
+        sign: { sub: String(user.id), expiresIn: '1h' }
       })
       
       console.log(token)
    const refreshToken = await reply.jwtSign(
+      { role: user.role },
       {
-         role : user.role,
-         id   : user.id
-
-      },
-
-      {
-        
-            subject:String(user.id),
-            expiresIn:'7d',
-         
+        sign: { sub: String(user.id), expiresIn: '7d' }
       }
    )
       return reply

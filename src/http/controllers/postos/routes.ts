@@ -44,7 +44,7 @@ export async function PostosRoutes(app:FastifyInstance) {
      app.get('/postos/meus', {
        preHandler: [verifyJWT, verifyUserRole(['GESTOR', 'ADMIN'])]
      }, async (request: FastifyRequest, reply: FastifyReply) => {
-       const userId = request.user?.id as number;
+       const userId = request.user?.sub as number;
        const postos = await prisma.posto.findMany({
          where: { gestorId: userId },
          include: {
