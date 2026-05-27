@@ -55,12 +55,6 @@ export async function UpdatePostoController(
       if (postoAtual) {
         const notificationContent = `O posto ${postoAtual.nome} atualizou os seus dados (${camposAlterados.join(", ")}).`;
 
-        // Notifica o gestor
-        await prisma.notifications.create({
-          data: { userId: postoAtual.gestorId, content: notificationContent },
-        });
-
-        // Notifica todos os MEMBER
         const membros = await prisma.user.findMany({
           where: { role: "MEMBER" },
         });
@@ -71,13 +65,8 @@ export async function UpdatePostoController(
           });
         }
 
-        // Emite via Socket.IO
         const io = getIO();
         if (io) {
-          io.to(postoAtual.gestorId.toString()).emit("nova_notificacao", {
-            content: notificationContent,
-            created_at: new Date(),
-          });
           for (const m of membros) {
             io.to(m.id.toString()).emit("nova_notificacao", {
               content: notificationContent,

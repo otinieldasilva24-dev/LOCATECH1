@@ -53,14 +53,8 @@ export async function RegisterPosto(request: FastifyRequest, reply: FastifyReply
   const notificationContent = `O posto ${posto.nome} foi registado com sucesso.`;
 
   try {
-    // Notifica o gestor
     const usecase = makeCreateNotification();
-    await usecase.execute({
-      userId: posto.gestorId,
-      content: notificationContent,
-    });
 
-    // Notifica todos os utilizadores MEMBER sobre o novo posto
     const membros = await prisma.user.findMany({
       where: { role: "MEMBER" },
     });
@@ -72,15 +66,10 @@ export async function RegisterPosto(request: FastifyRequest, reply: FastifyReply
       });
     }
 
-    // Emite evento Socket.IO
     const io = getIO();
     if (!io) {
       console.error("⚠️ Socket.IO não disponível — notificação não emitida.");
     } else {
-      io.to(posto.gestorId.toString()).emit("nova_notificacao", {
-        content: notificationContent,
-        created_at: new Date(),
-      });
       for (const m of membros) {
         io.to(m.id.toString()).emit("nova_notificacao", {
           content: `Novo posto disponível: ${posto.nome} foi registado na plataforma.`,

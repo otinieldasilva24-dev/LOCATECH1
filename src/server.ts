@@ -7,6 +7,7 @@ import multipart from '@fastify/multipart';
 import fastifyStatic from '@fastify/static';
 import path from 'path';
 
+import { prisma } from "@/lib/prisma";
 import { env } from "./Env";
 import { UsersRoutes } from "./http/controllers/users/routes";
 import { PostosRoutes } from "./http/controllers/postos/routes";
@@ -61,7 +62,13 @@ export const io = new Server(server, {
 
 io.on("connection", (socket) => {
   console.log("🔌 Cliente conectado:", socket.id);
-  socket.on("register", (userId) => socket.join(userId));
+  socket.on("register", async (userId) => {
+    socket.join(userId);
+    const user = await prisma.user.findUnique({ where: { id: Number(userId) } });
+    if (user && (user.role === "GESTOR" || user.role === "ADMIN")) {
+      socket.join("monitoramento");
+    }
+  });
   socket.on("disconnect", () => console.log("❌ Cliente desconectado."));
 });
 
@@ -87,7 +94,7 @@ app.post('/sensor', async (request, reply) => {
 
   console.log(`📡 [${cleanData.id}] Real-time Update: T:${cleanData.temp} S:${cleanData.stock}`);
 
-  io.emit('monitoramento_update', cleanData);
+  io.to("monitoramento").emit('monitoramento_update', cleanData);
 
   return reply.status(200).send({ status: "ok" });
 });

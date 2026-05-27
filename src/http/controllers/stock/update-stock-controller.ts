@@ -54,15 +54,6 @@ export async function UpdateStockController(
       if (precoAntigo !== precoNovo) {
         const notificationContent = `O preço do ${stockAtual.produto.nome} no posto ${stockAtual.posto.nome} foi alterado de ${precoAntigo} Kz para ${precoNovo} Kz.`;
 
-        // Notifica o gestor do posto
-        await prisma.notifications.create({
-          data: {
-            userId: stockAtual.posto.gestorId,
-            content: notificationContent,
-          },
-        });
-
-        // Notifica todos os MEMBER sobre a alteração de preço
         const membros = await prisma.user.findMany({
           where: { role: "MEMBER" },
         });
@@ -73,13 +64,8 @@ export async function UpdateStockController(
           });
         }
 
-        // Emite evento via Socket.IO para todos
         const io = getIO();
         if (io) {
-          io.to(stockAtual.posto.gestorId.toString()).emit('nova_notificacao', {
-            content: notificationContent,
-            created_at: new Date(),
-          });
           for (const m of membros) {
             io.to(m.id.toString()).emit('nova_notificacao', {
               content: notificationContent,
