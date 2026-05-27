@@ -2,7 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { FastifyReply, FastifyRequest } from "fastify";
 
 export async function NotificationsFetchController(request: FastifyRequest, reply: FastifyReply) {
-    const userId = request.user?.sub as number;
+    const userId = Number(request.user?.sub);
     if (!userId) {
       return reply.status(401).send({ message: "Não autenticado." });
     }

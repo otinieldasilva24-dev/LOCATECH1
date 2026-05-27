@@ -21,7 +21,7 @@ export async function CreateConviteController(
     });
   }
 
-  const deUserId = request.user?.sub as number;
+  const deUserId = Number(request.user?.sub);
   const { para_user_id, comunidade_id } = parsed.data;
 
   // Verifica se a comunidade existe
@@ -84,7 +84,7 @@ export async function ListConvitesPendentesController(
   request: FastifyRequest,
   reply: FastifyReply
 ) {
-  const userId = request.user?.sub as number;
+  const userId = Number(request.user?.sub);
 
   const convites = await prisma.convite.findMany({
     where: { para_user_id: userId, status: "PENDENTE" },
@@ -116,7 +116,7 @@ export async function ResponderConviteController(
     return reply.status(400).send({ message: "Ação inválida. Use ACEITE ou RECUSADO." });
   }
 
-  const userId = request.user?.sub as number;
+  const userId = Number(request.user?.sub);
   const { acao } = parsed.data;
 
   const convite = await prisma.convite.findUnique({ where: { id: conviteId } });
@@ -148,7 +148,7 @@ export async function ListComunidadesController(
   request: FastifyRequest,
   reply: FastifyReply
 ) {
-  const userId = request.user?.sub as number;
+  const userId = Number(request.user?.sub);
 
   const comunidades = await prisma.comunidade.findMany({
     include: {
@@ -188,7 +188,7 @@ export async function CreateComunidadeController(
     });
   }
 
-  const userId = request.user?.sub as number;
+  const userId = Number(request.user?.sub);
 
   const comunidade = await prisma.comunidade.create({
     data: {
