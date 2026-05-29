@@ -6,6 +6,7 @@ import { FetchNearbyPostosController, FetchNearbyPostosControllerV2 } from "./fi
 import { upload } from "@/utills/multer";
 import { FetchAllPostosController } from "./fetch-all-postos-controller";
 import { NotificationsFetchController } from "./notifications-fetch-controller";
+import { DeletePostoController } from "./delete-posto-controller";
 import { verifyJWT, verifyUserRole } from "../middleware/verify-jwt";
 import { prisma } from "@/lib/prisma";
 
@@ -73,8 +74,13 @@ export async function PostosRoutes(app:FastifyInstance) {
        return reply.status(200).send({ postos: postosFormatted });
      });
      
-     // Atualizar posto (apenas GESTOR ou ADMIN)
-     app.patch('/postos/:id', { 
-         preHandler: [verifyJWT, verifyUserRole(['GESTOR', 'ADMIN'])] 
-     }, UpdatePostoController);
+      // Atualizar posto (apenas GESTOR ou ADMIN)
+      app.patch('/postos/:id', { 
+          preHandler: [verifyJWT, verifyUserRole(['GESTOR', 'ADMIN'])] 
+      }, UpdatePostoController);
+
+      // Eliminar posto (apenas GESTOR ou ADMIN)
+      app.delete('/postos/:id', { 
+          preHandler: [verifyJWT, verifyUserRole(['GESTOR', 'ADMIN'])] 
+      }, DeletePostoController);
 }
