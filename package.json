@@ -62,5 +62,8 @@
     "test": "^3.3.0",
     "ui": "^0.2.4",
     "zod": "^3.23.8"
+  },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
   }
 }

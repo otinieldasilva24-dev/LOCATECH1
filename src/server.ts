@@ -48,8 +48,7 @@ app.register(fastifyJwt, {
 });
 
 app.register(fastifyCookie);
-main()
-
+main();
 
 export const io = new Server(server, {
   cors: {
@@ -75,7 +74,7 @@ io.on("connection", (socket) => {
 // Disponibiliza o Socket.IO globalmente para os controladores
 setIO(io);
 
-// --- ROTA DOS SENSORES COM VALIDAÇÃO ANTI-CRASH ---
+// --- ROTA DOS SENSORES COM VALIDAÇÃO ANTI-CRASH E ATUALIZAÇÃO DE DISPONIBILIDADE ---
 app.post('/sensor', async (request, reply) => {
   const data = request.body as any;
 
@@ -94,7 +93,55 @@ app.post('/sensor', async (request, reply) => {
 
   console.log(`📡 [${cleanData.id}] Real-time Update: T:${cleanData.temp} S:${cleanData.stock}`);
 
-  io.to("monitoramento").emit('monitoramento_update', cleanData);
+  // --- GRAVAÇÃO AUTOMÁTICA DA DISPONIBILIDADE NA BASE DE DADOS ---
+  try {
+    const postoNif = '202220269';   // NIF do posto "PA Sonangol Mutilados" configurado no seed
+    let produtosParaAtualizar: number[] = [];
+
+    // Define quais IDs de produto atualizar com base no identificador do sensor
+    if (cleanData.id === 'esp2') {
+      produtosParaAtualizar = [3];  // ID 3 = Gás
+    } else {
+      produtosParaAtualizar = [1, 2]; // ID 1 = Gasolina E ID 2 = Gasóleo (Usam o mesmo dado do sensor)
+    }
+
+    // Faz o update na tabela Stock cruzando a lista de IDs de produtos e o NIF do posto associado
+    await prisma.stock.updateMany({
+      where: {
+        produtoId: {
+          in: produtosParaAtualizar // O operador 'in' atualiza todos os IDs presentes no array de uma só vez
+        },
+        posto: {
+          nif: postoNif
+        }
+      },
+      data: {
+        quantidade_atual: Number(cleanData.stock) // Salva os valores reais medidos pelo sensor
+      }
+    });
+
+    console.log(`✅ DB Atualizada para o sensor ${cleanData.id} (Produtos: ${produtosParaAtualizar.join(', ')})`);
+
+  } catch (prismaError) {
+    console.error(`❌ Erro ao salvar dados do ${cleanData.id} no Prisma:`, prismaError);
+  }
+
+  // --- CONTROLO DINÂMICO DE CORES PARA O FRONTEND VIA WEBSOCKET ---
+  if (cleanData.id === 'esp2') {
+    // É o sensor do Gás -> Envia um ID diferente de 'esp1' para acionar o 'else' da sua função de cores.
+    // Com o valor 18, cairá no intervalo de 11 a 20 (Amarelo).
+    io.to("monitoramento").emit('monitoramento_update', {
+      ...cleanData,
+      id: 'esp2' 
+    });
+  } else {
+    // É a Gasolina/Gasóleo -> Envia explicitamente com o id: 'esp1' para forçar o frontend
+    // a validar as percentagens. Com o valor 71, cairá no intervalo de 61 a 100 (Verde).
+    io.to("monitoramento").emit('monitoramento_update', {
+      ...cleanData,
+      id: 'esp1'
+    });
+  }
 
   return reply.status(200).send({ status: "ok" });
 });
